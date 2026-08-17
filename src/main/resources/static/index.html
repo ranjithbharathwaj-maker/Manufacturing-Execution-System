@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MES - Manufacturing Execution System</title>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome/Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="dark-mode">
+
+    <!-- Auth Backdrop Window -->
+    <div id="login-overlay" class="auth-overlay">
+        <div class="auth-card glass">
+            <div class="auth-header">
+                <i class="fa-solid fa-industry logo-icon"></i>
+                <h2 id="auth-title">MES Login</h2>
+                <p id="auth-subtitle">Manufacturing Execution System Portal</p>
+            </div>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="login-emp-id">Employee ID</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-id-card"></i>
+                        <input type="text" id="login-emp-id" placeholder="e.g. E101, E104, E105" required autocomplete="off">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Password</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-lock"></i>
+                        <input type="password" id="login-password" placeholder="Password" required autocomplete="off">
+                    </div>
+                </div>
+                <div id="login-error" class="error-msg hide"></div>
+                <button type="submit" class="btn btn-primary btn-block">Sign In</button>
+                <div class="auth-toggle-link" style="margin-top: 15px; font-size: 0.9rem;">
+                    Don't have an account? <a href="#" id="toggle-to-register" style="color: var(--primary); text-decoration: none; font-weight: 600;">Register here</a>
+                </div>
+            </form>
+            
+            <form id="register-form" class="hide">
+                <div class="form-group">
+                    <label for="register-emp-id">Employee ID</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-id-card"></i>
+                        <input type="text" id="register-emp-id" placeholder="e.g. E106" required autocomplete="off">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="register-name">Full Name</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-user"></i>
+                        <input type="text" id="register-name" placeholder="Staff Name" required autocomplete="off">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="register-role">Role</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-user-tag"></i>
+                        <select id="register-role" required>
+                            <option value="OPERATOR">Machine Operator</option>
+                            <option value="INSPECTOR">Quality Inspector</option>
+                            <option value="MANAGER">Production Manager</option>
+                            <option value="ADMIN">System Admin</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="register-dept">Department</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-building"></i>
+                        <input type="text" id="register-dept" placeholder="e.g. Production" required autocomplete="off">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="register-password">Password</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-lock"></i>
+                        <input type="password" id="register-password" placeholder="Password" required autocomplete="off">
+                    </div>
+                </div>
+                <div id="register-error" class="error-msg hide"></div>
+                <div id="register-success" class="hide" style="color: var(--success); font-size: 0.85rem; margin-bottom: 20px; background: rgba(16, 185, 129, 0.15); border: 1px solid var(--success); padding: 10px; border-radius: var(--radius-md);"></div>
+                <button type="submit" class="btn btn-primary btn-block">Register</button>
+                <div class="auth-toggle-link" style="margin-top: 15px; font-size: 0.9rem;">
+                    Already have an account? <a href="#" id="toggle-to-login" style="color: var(--primary); text-decoration: none; font-weight: 600;">Sign In</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main App Layout -->
+    <div class="app-layout hide" id="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar glass">
+            <div class="sidebar-brand">
+                <i class="fa-solid fa-industry"></i>
+                <span>MES Dashboard</span>
+            </div>
+            
+            <div class="user-profile-widget">
+                <div class="avatar"><span id="user-initials">U</span></div>
+                <div class="user-info">
+                    <h4 id="user-name">Loading...</h4>
+                    <span id="user-role" class="badge role-badge">Role</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <ul>
+                    <li class="nav-item active" data-tab="dashboard-tab">
+                        <i class="fa-solid fa-chart-pie"></i><span>Dashboard</span>
+                    </li>
+                    <li class="nav-item limit-manager limit-admin" data-tab="products-tab">
+                        <i class="fa-solid fa-cube"></i><span>Products</span>
+                    </li>
+                    <li class="nav-item limit-manager limit-admin" data-tab="materials-tab">
+                        <i class="fa-solid fa-dolly"></i><span>Raw Materials</span>
+                    </li>
+                    <li class="nav-item limit-manager limit-admin" data-tab="machines-tab">
+                        <i class="fa-solid fa-gears"></i><span>Machines</span>
+                    </li>
+                    <li class="nav-item limit-admin" data-tab="employees-tab">
+                        <i class="fa-solid fa-users"></i><span>Employees</span>
+                    </li>
+                    <li class="nav-item limit-manager limit-admin" data-tab="orders-tab">
+                        <i class="fa-solid fa-file-invoice"></i><span>Orders</span>
+                    </li>
+                    <li class="nav-item limit-operator limit-manager limit-admin" data-tab="tracking-tab">
+                        <i class="fa-solid fa-gauge-high"></i><span>Production Track</span>
+                    </li>
+                    <li class="nav-item limit-inspector limit-manager limit-admin" data-tab="qc-tab">
+                        <i class="fa-solid fa-clipboard-check"></i><span>Quality Control</span>
+                    </li>
+                    <li class="nav-item limit-operator limit-manager limit-admin" data-tab="maintenance-tab">
+                        <i class="fa-solid fa-screwdriver-wrench"></i><span>Maintenance</span>
+                    </li>
+                    <li class="nav-item" data-tab="reports-tab">
+                        <i class="fa-solid fa-file-export"></i><span>Reports & Stats</span>
+                    </li>
+                    <li class="nav-item" data-tab="logs-tab">
+                        <i class="fa-solid fa-list-check"></i><span>Audit Logs</span>
+                    </li>
+                </ul>
+            </nav>
+
+            <div class="sidebar-footer">
+                <button id="logout-btn" class="btn btn-red btn-block"><i class="fa-solid fa-sign-out-alt"></i> Logout</button>
+            </div>
+        </aside>
+
+        <!-- Right Side Content -->
+        <main class="main-content">
+            <!-- Navbar -->
+            <header class="top-navbar glass">
+                <div class="menu-toggle"><i class="fa-solid fa-bars"></i></div>
+                <div class="page-title"><h2 id="current-tab-title">Dashboard Overview</h2></div>
+                <div class="navbar-actions">
+                    <span id="low-material-flag" class="alert-flag hide">
+                        <i class="fa-solid fa-triangle-exclamation"></i> Low Materials!
+                    </span>
+                    <button class="btn btn-outline" id="refresh-dashboard"><i class="fa-solid fa-rotate"></i> Sync</button>
+                    <div id="live-clock" class="clock-display">00:00:00</div>
+                </div>
+            </header>
+
+            <!-- Content Body -->
+            <div class="content-body">
+                
+                <!-- TAB 1: DASHBOARD -->
+                <div id="dashboard-tab" class="tab-pane active">
+                    <!-- Metric Cards -->
+                    <div class="metrics-grid">
+                        <div class="metric-card glass card-blue">
+                            <div class="metric-icon"><i class="fa-solid fa-cogs"></i></div>
+                            <div class="metric-content">
+                                <h3 id="stat-machines-running">0</h3>
+                                <p>Machines Running</p>
+                            </div>
+                            <div class="metric-glow"></div>
+                        </div>
+                        <div class="metric-card glass card-yellow">
+                            <div class="metric-icon"><i class="fa-solid fa-spinner"></i></div>
+                            <div class="metric-content">
+                                <h3 id="stat-orders-pending">0</h3>
+                                <p>Orders Pending</p>
+                            </div>
+                            <div class="metric-glow"></div>
+                        </div>
+                        <div class="metric-card glass card-green">
+                            <div class="metric-icon"><i class="fa-solid fa-box-open"></i></div>
+                            <div class="metric-content">
+                                <h3 id="stat-today-production">0</h3>
+                                <p>Today's Manufactured</p>
+                            </div>
+                            <div class="metric-glow"></div>
+                        </div>
+                        <div class="metric-card glass card-red">
+                            <div class="metric-icon"><i class="fa-solid fa-trash-can"></i></div>
+                            <div class="metric-content">
+                                <h3 id="stat-defects-count">0</h3>
+                                <p>Defects Recorded</p>
+                            </div>
+                            <div class="metric-glow"></div>
+                        </div>
+                    </div>
+
+                    <!-- Layout splits -->
+                    <div class="dashboard-charts-grid">
+                        <!-- Chart Card -->
+                        <div class="chart-card glass">
+                            <h3>Analytics Dashboard</h3>
+                            <div class="canvas-container">
+                                <canvas id="dashboard-order-chart"></canvas>
+                            </div>
+                        </div>
+                        <!-- Alert / Materials Stock Widget -->
+                        <div class="chart-card glass">
+                            <h3>Raw Inventory Status</h3>
+                            <div class="material-list-widget" id="dashboard-materials">
+                                <!-- Dynamically loaded progress indicators -->
+                            </div>
+                        </div>
+                        <!-- Finished Goods Stock Widget -->
+                        <div class="chart-card glass">
+                            <h3>Finished Goods Stock</h3>
+                            <div class="material-list-widget" id="dashboard-products">
+                                <!-- Dynamically loaded finished goods progress indicators -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-details-grid">
+                        <!-- Running Machines -->
+                        <div class="table-card glass">
+                            <div class="card-header">
+                                <h3>Machine Floor Status</h3>
+                            </div>
+                            <div class="machine-floor-grid" id="dashboard-machines">
+                                <!-- Loads machine states -->
+                            </div>
+                        </div>
+                        <!-- Defect Analysis Widget -->
+                        <div class="table-card glass">
+                            <div class="card-header">
+                                <h3>Defects By Categories</h3>
+                            </div>
+                            <div class="canvas-container-defect">
+                                <canvas id="dashboard-defect-pie"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: PRODUCTS (Admin/Manager) -->
+                <div id="products-tab" class="tab-pane">
+                    <div class="table-card glass">
+                        <div class="card-header flex-header">
+                            <h3>Product Catalogue</h3>
+                            <button class="btn btn-primary" onclick="showProductModal()"><i class="fa-solid fa-plus"></i> New Product</button>
+                        </div>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Id</th>
+                                    <th>Product Name</th>
+                                    <th>Category</th>
+                                    <th>Price</th>
+                                    <th>Stock Qty (Finished)</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="products-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- TAB 3: MATERIALS (Admin/Manager) -->
+                <div id="materials-tab" class="tab-pane">
+                    <div class="table-card glass">
+                        <div class="card-header flex-header">
+                            <h3>Raw Materials Stock</h3>
+                            <button class="btn btn-primary" onclick="showMaterialModal()"><i class="fa-solid fa-plus"></i> Add Inventory</button>
+                        </div>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Material Name</th>
+                                    <th>Quantity In Stock</th>
+                                    <th>Unit</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="materials-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- TAB 4: MACHINES (Admin/Manager) -->
+                <div id="machines-tab" class="tab-pane">
+                    <div class="table-card glass">
+                        <div class="card-header flex-header">
+                            <h3>Factory Machine Registry</h3>
+                            <button class="btn btn-primary" onclick="showMachineModal()"><i class="fa-solid fa-plus"></i> Register Machine</button>
+                        </div>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Machine ID</th>
+                                    <th>Machine Model</th>
+                                    <th>Location</th>
+                                    <th>Current Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="machines-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- TAB 5: EMPLOYEES (Admin) -->
+                <div id="employees-tab" class="tab-pane">
+                    <div class="table-card glass">
+                        <div class="card-header flex-header">
+                            <h3>Employee Registry</h3>
+                            <button class="btn btn-primary" onclick="showEmployeeModal()"><i class="fa-solid fa-user-plus"></i> Add Worker</button>
+                        </div>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Name</th>
+                                    <th>Role</th>
+                                    <th>Department</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="employees-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- TAB 6: ORDERS (Admin/Manager) -->
+                <div id="orders-tab" class="tab-pane">
+                    <div class="table-card glass">
+                        <div class="card-header flex-header">
+                            <h3>Production Orders</h3>
+                            <button class="btn btn-primary" onclick="showOrderModal()"><i class="fa-solid fa-plus"></i> Create Order</button>
+                        </div>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Order ID</th>
+                                    <th>Product ID</th>
+                                    <th>Target Quantity</th>
+                                    <th>Job State</th>
+                                    <th>Machine</th>
+                                    <th>Operator</th>
+                                    <th>Shift</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="orders-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- TAB 7: PRODUCTION TRACK (Operator/Manager/Admin) -->
+                <div id="tracking-tab" class="tab-pane">
+                    <div class="split-view">
+                        <div class="table-card glass" style="flex: 2;">
+                            <div class="card-header">
+                                <h3>Active Running Operations</h3>
+                            </div>
+                            <div id="running-orders-container" class="active-jobs-list">
+                                <!-- Loads running orders with progress bars -->
+                            </div>
+                        </div>
+
+                        <!-- Update Dialog Widget (Sticky side panel) -->
+                        <div class="card glass" style="flex: 1;" id="tracking-update-panel">
+                            <h3>Update Output Count</h3>
+                            <form id="tracking-update-form">
+                                <input type="hidden" id="track-order-id">
+                                <div class="form-group">
+                                    <label>Order ID</label>
+                                    <input type="text" id="track-display-order-id" class="input-disabled" readonly>
+                                </div>
+                                <div class="form-group">
+                                    <label for="track-completed">Succeeded (Units)</label>
+                                    <input type="number" id="track-completed" min="0" required>
+                                </div>
+                                <button type="submit" class="btn btn-green btn-block"><i class="fa-solid fa-save"></i> Save Production Count</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 8: QUALITY CONTROL (Inspector / Manager) -->
+                <div id="qc-tab" class="tab-pane">
+                    <div class="split-view">
+                        <div class="table-card glass" style="flex: 2;">
+                            <div class="card-header">
+                                <h3>Quality Control Queue</h3>
+                            </div>
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Order ID</th>
+                                        <th>Product</th>
+                                        <th>Target</th>
+                                        <th>Good Count</th>
+                                        <th>Defect Count</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="qc-table-body"></tbody>
+                            </table>
+                        </div>
+
+                        <!-- Record QA Defect Details Panel -->
+                        <div class="card glass id-card-panel" style="flex: 1;" id="qc-update-panel">
+                            <h3>Log Product Defects</h3>
+                            <form id="qc-update-form">
+                                <input type="hidden" id="qc-order-id">
+                                <div class="form-group">
+                                    <label>Order ID</label>
+                                    <input type="text" id="qc-display-order-id" class="input-disabled" readonly>
+                                </div>
+                                <div class="form-group">
+                                    <label for="qc-good">Total Passed Goods</label>
+                                    <input type="number" id="qc-good" min="0" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="qc-defective">Total Defective Goods</label>
+                                    <input type="number" id="qc-defective" min="0" required>
+                                </div>
+                                <div class="defect-categories">
+                                    <strong>Defect Category Details (Sum must match Defective Quantity)</strong>
+                                    <div class="grid-2">
+                                        <div class="form-group">
+                                            <label for="qc-crack">Crack</label>
+                                            <input type="number" id="qc-crack" min="0" value="0">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="qc-color">Color Mismatch</label>
+                                            <input type="number" id="qc-color" min="0" value="0">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="qc-size">Size Issue</label>
+                                            <input type="number" id="qc-size" min="0" value="0">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="qc-damaged">Damaged</label>
+                                            <input type="number" id="qc-damaged" min="0" value="0">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="qc-error" class="error-msg hide"></div>
+                                <button type="submit" class="btn btn-red btn-block"><i class="fa-solid fa-shield-halved"></i> Apply Quality Log</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 9: MAINTENANCE (Operator / Maintenance) -->
+                <div id="maintenance-tab" class="tab-pane">
+                    <div class="split-view">
+                        <!-- Left - Tickets Log -->
+                        <div class="table-card glass" style="flex: 2;">
+                            <div class="card-header flex-header">
+                                <h3>Maintenance Tickets</h3>
+                                <button class="btn btn-yellow" onclick="showLogTicketModal()"><i class="fa-solid fa-triangle-exclamation"></i> Log Breakdown</button>
+                            </div>
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Machine ID</th>
+                                        <th>Problem Details</th>
+                                        <th>Status</th>
+                                        <th>Assignee</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="maintenance-table-body"></tbody>
+                            </table>
+                        </div>
+
+                        <!-- Right - Resolve Actions -->
+                        <div class="card glass" style="flex: 1; display: none;" id="maintenance-action-card">
+                            <h3>Ticket Resolution</h3>
+                            <form id="maintenance-resolve-form">
+                                <input type="hidden" id="maint-ticket-id">
+                                <div class="form-group">
+                                    <label>Ticket ID</label>
+                                    <input type="text" id="maint-display-ticket-id" class="input-disabled" readonly>
+                                </div>
+                                <div class="form-group">
+                                    <label for="maint-engineer">Assign Engineer</label>
+                                    <input type="text" id="maint-engineer" placeholder="e.g. Arjun" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="maint-status-select">Status</label>
+                                    <select id="maint-status-select" required>
+                                        <option value="In Progress">In Progress</option>
+                                        <option value="Resolved">Resolved (Sets Machine status to Idle)</option>
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn btn-yellow btn-block"><i class="fa-solid fa-floppy-disk"></i> Update Maintenance</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 10: REPORTS & ANALYTICS -->
+                <div id="reports-tab" class="tab-pane">
+                    <div class="metrics-grid">
+                        <div class="metric-card glass">
+                            <h3>Analytics Reporting</h3>
+                            <p>Generate plant-wide productivity logs, quality efficiency stats, and worker utilization matrices.</p>
+                            <div class="flex-actions" style="margin-top: 20px;">
+                                <button onclick="downloadReport('pdf')" class="btn btn-red"><i class="fa-solid fa-file-pdf"></i> Download PDF Report</button>
+                                <button onclick="downloadReport('excel')" class="btn btn-green"><i class="fa-solid fa-file-excel"></i> Export to Excel</button>
+                            </div>
+                        </div>
+                        <!-- Daily Summary Card -->
+                        <div class="metric-card glass card-blue">
+                            <div class="metric-content">
+                                <h4 style="color:var(--text-muted); font-size:0.9rem; text-transform:uppercase;">Daily Report Summary</h4>
+                                <div style="margin-top:10px; display:flex; flex-direction:column; gap:5px; font-size:0.9rem;">
+                                    <span>Orders Completed: <strong id="report-completed-orders" style="color:var(--text-primary)">0</strong></span>
+                                    <span>Products Manufactured: <strong id="report-manufactured-qty" style="color:var(--success)">0</strong></span>
+                                    <span>Defective Products: <strong id="report-defects-qty" style="color:var(--danger)">0</strong></span>
+                                    <span>Quality Efficiency: <strong id="report-quality-efficiency" style="color:var(--primary)">100%</strong></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-charts-grid">
+                        <div class="chart-card glass" style="flex:1;">
+                            <h3>Daily Production Volume</h3>
+                            <div class="canvas-container">
+                                <canvas id="daily-output-chart"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-card glass" style="flex:1;">
+                            <h3>Machine Utilization Rate</h3>
+                            <div class="canvas-container">
+                                <canvas id="machine-util-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Worker Performance Overview Table -->
+                    <div class="table-card glass" style="margin-top:20px;">
+                        <div class="card-header">
+                            <h3>Worker Performance Overview</h3>
+                        </div>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Employee ID</th>
+                                    <th>Operator Name</th>
+                                    <th>Completed (Good)</th>
+                                    <th>Defects</th>
+                                    <th>Quality Efficiency %</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reports-worker-table-body">
+                                <tr><td colspan="5" class="text-center text-muted">No worker metrics calculated yet.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- TAB 11: AUDIT LOGS -->
+                <div id="logs-tab" class="tab-pane">
+                    <div class="table-card glass">
+                        <div class="card-header">
+                            <h3>Audit Log Trace</h3>
+                        </div>
+                        <div class="logs-widget" id="audit-logs-container">
+                            <!-- Raw historical logs -->
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- QR/Barcode Scanner Modal (Simulated) -->
+    <div id="scan-modal" class="modal-overlay hide">
+        <div class="modal glass">
+            <div class="modal-header">
+                <h3>QR Code Machine Scan</h3>
+                <span class="close-modal" onclick="closeScanModal()">&times;</span>
+            </div>
+            <div class="modal-body text-center">
+                <i class="fa-solid fa-qrcode barcode-glow-icon"></i>
+                <div class="barcode-reader-sim">
+                    <div class="scanner-laser"></div>
+                    <div class="machine-details-card" id="scan-qr-content">
+                        <!-- Loaded barcode info -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ALL MODALS -->
+
+    <!-- Create Product Modal -->
+    <div id="product-modal" class="modal-overlay hide">
+        <div class="modal glass">
+            <div class="modal-header">
+                <h3>Define Product</h3>
+                <span class="close-modal" onclick="closeProductModal()">&times;</span>
+            </div>
+            <form id="product-form">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="product-id">Product ID</label>
+                        <input type="text" id="product-id" placeholder="e.g. P104" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="product-name">Product Name</label>
+                        <input type="text" id="product-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="product-category">Category</label>
+                        <input type="text" id="product-category" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="product-price">Unit Price ($)</label>
+                        <input type="number" id="product-price" step="0.01" min="0" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeProductModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Product</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Create Material Modal -->
+    <div id="material-modal" class="modal-overlay hide">
+        <div class="modal glass">
+            <div class="modal-header">
+                <h3>Add Raw Material</h3>
+                <span class="close-modal" onclick="closeMaterialModal()">&times;</span>
+            </div>
+            <form id="material-form">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="material-id">Material ID</label>
+                        <input type="text" id="material-id" placeholder="e.g. RM004" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="material-name">Material Name</label>
+                        <input type="text" id="material-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="material-quantity">Initial Stock Quantity</label>
+                        <input type="number" id="material-quantity" step="0.1" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="material-unit">Unit</label>
+                        <input type="text" id="material-unit" placeholder="e.g. kg, pcs" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeMaterialModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Material</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Create Machine Modal -->
+    <div id="machine-modal" class="modal-overlay hide">
+        <div class="modal glass">
+            <div class="modal-header">
+                <h3>Register Machine</h3>
+                <span class="close-modal" onclick="closeMachineModal()">&times;</span>
+            </div>
+            <form id="machine-form">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="machine-id">Machine ID</label>
+                        <input type="text" id="machine-id" placeholder="e.g. M104" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="machine-name">Machine Name</label>
+                        <input type="text" id="machine-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="machine-location">Location Floor</label>
+                        <input type="text" id="machine-location" placeholder="e.g. Bay-D" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="machine-status">Initial Status</label>
+                        <select id="machine-status" required>
+                            <option value="Idle">Idle</option>
+                            <option value="Running">Running</option>
+                            <option value="Maintenance">Maintenance</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeMachineModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Register</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Create Employee Modal -->
+    <div id="employee-modal" class="modal-overlay hide">
+        <div class="modal glass">
+            <div class="modal-header">
+                <h3>Add Factory Personnel</h3>
+                <span class="close-modal" onclick="closeEmployeeModal()">&times;</span>
+            </div>
+            <form id="employee-form">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="employee-id">Employee ID</label>
+                        <input type="text" id="employee-id" placeholder="e.g. E106" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="employee-name">Staff Name</label>
+                        <input type="text" id="employee-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="employee-role">Role</label>
+                        <select id="employee-role" required>
+                            <option value="OPERATOR">Machine Operator</option>
+                            <option value="INSPECTOR">Quality Inspector</option>
+                            <option value="MANAGER">Production Manager</option>
+                            <option value="ADMIN">System Admin</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="employee-dept">Department</label>
+                        <input type="text" id="employee-dept" placeholder="e.g. Production" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="employee-password">Login Password</label>
+                        <input type="password" id="employee-password" placeholder="Password" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeEmployeeModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Personnel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Create Order Modal -->
+    <div id="order-modal" class="modal-overlay hide">
+        <div class="modal glass">
+            <div class="modal-header">
+                <h3>Draft Production Order</h3>
+                <span class="close-modal" onclick="closeOrderModal()">&times;</span>
+            </div>
+            <form id="order-form">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="order-id">Order ID</label>
+                        <input type="text" id="order-id" placeholder="e.g. PO002" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="order-product">Select Product</label>
+                        <select id="order-product" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="order-quantity">Quantity to Manufacture</label>
+                        <input type="number" id="order-quantity" min="1" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeOrderModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Order</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Allocate / Start Order Modal -->
+    <div id="start-order-modal" class="modal-overlay hide">
+        <div class="modal glass">
+            <div class="modal-header">
+                <h3>Allocate Machine & Operator</h3>
+                <span class="close-modal" onclick="closeStartOrderModal()">&times;</span>
+            </div>
+            <form id="start-order-form">
+                <div class="modal-body">
+                    <input type="hidden" id="start-order-id">
+                    <div class="form-group">
+                        <label>Order ID</label>
+                        <input type="text" id="start-order-display-id" class="input-disabled" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="start-machine">Assign Machine</label>
+                        <select id="start-machine" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="start-operator">Assign Operator</label>
+                        <select id="start-operator" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="start-shift">Shift</label>
+                        <select id="start-shift" required>
+                            <option value="Morning">Morning Shift</option>
+                            <option value="Afternoon">Afternoon Shift</option>
+                            <option value="Night">Night Shift</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeStartOrderModal()">Cancel</button>
+                    <button type="submit" class="btn btn-green">Start Production</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Log breakdown Modal -->
+    <div id="breakdown-modal" class="modal-overlay hide">
+        <div class="modal glass">
+            <div class="modal-header">
+                <h3>Log Machine Breakdown</h3>
+                <span class="close-modal" onclick="closeBreakdownModal()">&times;</span>
+            </div>
+            <form id="breakdown-form">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="breakdown-machine">Select Machine</label>
+                        <select id="breakdown-machine" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="breakdown-problem">Problem Description</label>
+                        <textarea id="breakdown-problem" rows="3" placeholder="Explain the failure (e.g. Motor Failure, Belt tear)" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeBreakdownModal()">Cancel</button>
+                    <button type="submit" class="btn btn-red">Submit Ticket</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
